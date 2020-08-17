@@ -14,6 +14,10 @@
         });
     }
 
+    window.isGoodItem = function(itemName){
+        return goodItems.includes(itemName) ? 1 : 0
+    }
+
 	window.isTrashItem = function(itemName)
 	{
 		return trashItems.includes(itemName) || (mapsAreTrash && itemName.startsWith("Map")) || (compassesAreTrash && itemName.startsWith("Compass"))
@@ -22,12 +26,18 @@
 	window.setDungeonContents = function(dungeonIndex,region,prefix,locationNames)
 	{
 		var contents = [],niceString = "",trashString = "";
+		var raw_items = []
+		var good_items = []
+		var raw_locations = []
 		for(var i = 0; i < locationNames.length; i++)
 		{
 			var locationName = locationNames[i],fullName = prefix+locationName;
+			raw_locations.push(fullName)
 			if(fullName in region)
 			{
 				var item = region[fullName],niceName = getNiceName(item),itemAtLocation = niceName+" at "+locationName;
+				raw_items.push(item)
+				good_items.push(isGoodItem(niceName))
 				contents[locationName] = niceName;
 				if(isTrashItem(item))
 				{
@@ -44,6 +54,9 @@
 		dungeonContents[dungeonIndex] = contents;
 		dungeons[dungeonIndex].niceContent = niceString;
 		dungeons[dungeonIndex].trashContent = trashString;
+		dungeons[dungeonIndex].good_items = good_items
+		dungeons[dungeonIndex].raw_items = raw_items
+		dungeons[dungeonIndex].raw_locations = raw_locations
 	}
 
 	window.setContent = function(chestIndex,region,locationName)
@@ -52,8 +65,11 @@
 		{
 			var item = region[locationName];
 			chests[chestIndex].content = getNiceName(item);
-			if(isTrashItem(item) && !chests[chestIndex].is_opened)
-				window.toggle_chest(chestIndex);
+			chests[chestIndex].good_items = [isGoodItem(getNiceName(item))]
+			chests[chestIndex].raw_items = [item]
+			chests[chestIndex].raw_locations = [locationName]
+//			if(isTrashItem(item) && !chests[chestIndex].is_opened)
+//				window.toggle_chest(chestIndex);
 		}
 		else
 			alert("Could not find location "+locationName);
@@ -62,12 +78,16 @@
 	window.setContents = function(chestIndex,region,locationNames)
 	{
 		var content = "",trash = true;
+		var raw_items = []
+		var good_items = []
 		for(var i = 0; i < locationNames.length; i++)
 		{
 			var locationName = locationNames[i];
 			if(locationName in region)
 			{
 				var item = region[locationName];
+				raw_items.push(item)
+				good_items.push(isGoodItem(getNiceName(item)))
 				content += content === "" ?getNiceName(item) :", "+getNiceName(item);
 				if(trash && !isTrashItem(item))
 					trash = false;
@@ -76,8 +96,11 @@
 				alert("Could not find location "+locationName+" (chest index "+chestIndex+")");
 		}
 		chests[chestIndex].content = content;
-		if(trash && content !== "" && !chests[chestIndex].is_opened)
-			window.toggle_chest(chestIndex);
+		chests[chestIndex].raw_items = raw_items
+		chests[chestIndex].good_items = good_items
+		chests[chestIndex].raw_locations = locationNames
+//		if(trash && content !== "" && !chests[chestIndex].is_opened)
+//			window.toggle_chest(chestIndex);
 	}
 
 	window.setPrize = function(dungeonIndex,region,locationName)
@@ -184,7 +207,103 @@
 		else
 			alert("Could not find location "+locationName);
 	}
-	
+	window.getItem = function(name){
+	    switch(name){
+            case "Armor":
+            case "ProgressiveArmor":
+                return "tunic";
+            case "Sword":
+            case "UncleSword":
+            case "ProgressiveSword":
+                return "sword";
+            case "Shield":
+		    case "ProgressiveShield":
+			    return "shield";
+            case "Moon Pearl":
+            case "MoonPearl":
+                return "moonpearl";
+            case "Bow":
+            case "ProgressiveBow":
+            case "BowAndArrows":
+                return "bow";
+            case "Blue Boomerang":
+            case "Boomerang":
+            case "RedBoomerang":
+            case "Red Boomerang":
+                return "boomerang";
+            case "Hookshot":
+			    return "hookshot";
+            case "Mushroom":
+			    return "mushroom";
+            case "Powder":
+			    return "powder";
+            case "Fire Rod":
+            case "FireRod":
+                return "firerod";
+            case "Ice Rod":
+            case "IceRod":
+                return "icerod";
+            case "Bombos":
+                return "bombos";
+            case "Ether":
+                return "ether";
+            case "Quake":
+                return "quake";
+            case "Lamp":
+			    return "lantern";
+            case "Hammer":
+			    return "hammer";
+            case "Shovel":
+			    return "shovel";
+            case "Bug Net":
+            case "BugCatchingNet":
+                return "net";
+            case "Book of Mudora":
+            case "BookOfMudora":
+                return "book";
+            case "Bottle":
+            case "BottleWithRedPotion":
+            case "Bottle (Red Potion)":
+            case "BottleWithGreenPotion":
+            case "Bottle (Green Potion)":
+            case "BottleWithBluePotion":
+            case "Bottle (Blue Potion)":
+            case "BottleWithFairy":
+            case "Bottle (Fairy)":
+            case "BottleWithBee":
+            case "Bottle (Bee)":
+            case "BottleWithGoldBee":
+            case "Bottle (Gold Bee)":
+                return "bottle";
+            case "CaneOfSomaria":
+            case "Cane of Somaria":
+                return "somaria";
+            case "CaneOfByrna":
+            case "Cane of Byrna":
+                return "byrna";
+            case "Cape":
+                return "cape";
+            case "MagicMirror":
+            case "Mirror":
+                return "mirror";
+		    case "PegasusBoots":
+            case "Pegasus Boots":
+                return "boots";
+		    case "ProgressiveGlove":
+            case "Gloves":
+                return "glove";
+            case "Flippers":
+                return "flippers";
+		    case "OcarinaInactive":
+            case "Flute":
+                return "flute";
+		    case "HalfMagic":
+            case "Half Magic":
+                return "magic";
+            default:
+                return "trash";
+	    }
+	}
 	window.getNiceName = function(name)
 	{
 		switch(name)
@@ -626,6 +745,30 @@
 		if (document.getElementById("compasses").checked == true) {
 			window.compassesAreTrash = true;
 		}
+		window.goodItems = [
+		    getNiceName('bow'),
+		    getNiceName('hookshot'),
+		    getNiceName('mushroom'),
+		    getNiceName('powder'),
+		    getNiceName('firerod'),
+		    getNiceName('icerod'),
+		    getNiceName('bombos'),
+		    getNiceName('ether'),
+		    getNiceName('quake'),
+		    getNiceName('lantern'),
+		    getNiceName('hammer'),
+		    getNiceName('shovel'),
+		    getNiceName('flute'),
+		    getNiceName('book'),
+		    getNiceName('somaria'),
+		    getNiceName('cape'),
+		    getNiceName('mirror'),
+		    getNiceName('boots'),
+		    getNiceName('glove'),
+		    getNiceName('flippers'),
+		    getNiceName('moonpearl'),
+		    getNiceName('sword')
+		]
 		
 		var reader = new FileReader();
 		reader.onload = function(){
@@ -637,10 +780,258 @@
 			loadSpoiler(spoiler);
 		};
 		reader.readAsText(file);
-		closeSpoilerModal();
+        window.available_chests = new Set()
+	    window.opened_chests = {}
+
+        closeSpoilerModal();
 	}
 }(window));
 
 function closeSpoilerModal() {
 	$('#spoilerModal').hide();
+}
+
+function closeAndSimulate(){
+    $('#simulateButton').hide();
+    for(var i = 0; i < chests.length; ++i){
+        if(chests[i].is_opened){
+            chests[i].is_opened = false
+        }
+    }
+    // Always grab link's house and sanctuary
+    toggle_chest(2);
+    toggle_chest(58);
+    updateAvailableChests();
+    callPredictionService();
+    window.finished = false
+    simulate();
+}
+function crystalCheck() {
+    var crystal_count = 0;
+    for (var k = 0; k < 10; k++) {
+        if ((prizes[k] === 3 || prizes[k] === 4) && items['boss'+k]) {
+            crystal_count++;
+        }
+    }
+    return crystal_count;
+}
+
+async function simulate(){
+    while(!window.finished){
+        await new Promise(r => setTimeout(r, 2000));
+        if(!window.hasOwnProperty('location_scores')){
+            console.log("Location scores missing, wait for initial call")
+            callPredictionService();
+            continue;
+        }
+        if(window.location_scores.length == 0){
+            updateAvailableChests();
+            var openable_chest = false
+            for(var i = 0; i < chests.length && !openable_chest; ++i){
+                if(!chests[i].is_opened && chests[i].is_available == 'available'){
+                    openable_chest = i
+                }
+            }
+            toggle_chest(openable_chest)
+            continue;
+        }
+        var dungeon_defeated = false
+        for(var i = 10; i >= 0; --i){
+            current_dungeon = dungeons[i]
+            if(current_dungeon.is_beatable() == 'available' && !current_dungeon.is_beaten){
+                if(prizes[i] > 1){
+                    toggle_boss(i)
+                    label = "boss" + i
+                    items[label] = !items[label]
+                    var node = document.getElementsByClassName(label)[0]
+                    node.classList[items[label] ? 'add' : 'remove']('defeated');
+                    dungeon_defeated = true
+                    if (crystalCheck() >= 7){
+            var gt_chest_order = ["Ganon's Tower - Hope Room - Left",
+                            "Ganon's Tower - Hope Room - Right",
+                            "Ganon's Tower - Bob's Torch",
+                            "Ganon's Tower - DMs Room - Top Left",
+                            "Ganon's Tower - DMs Room - Top Right",
+                            "Ganon's Tower - DMs Room - Bottom Left",
+                            "Ganon's Tower - DMs Room - Bottom Right",
+                            "Ganon's Tower - Map Chest",
+                            "Ganon's Tower - Firesnake Room",
+                            "Ganon's Tower - Randomizer Room - Top Left",
+                            "Ganon's Tower - Randomizer Room - Top Right",
+                            "Ganon's Tower - Randomizer Room - Bottom Left",
+                            "Ganon's Tower - Randomizer Room - Bottom Right",
+                            "Ganon's Tower - Bob's Chest",
+                            "Ganon's Tower - Big Key Room - Left",
+                            "Ganon's Tower - Big Key Room - Right",
+                            "Ganon's Tower - Big Key Chest",
+                            "Ganon's Tower - Compass Room - Top Left",
+                            "Ganon's Tower - Compass Room - Top Right",
+                            "Ganon's Tower - Compass Room - Bottom Left",
+                            "Ganon's Tower - Compass Room - Bottom Right",
+                            "Ganon's Tower - Tile Room"]
+            var gt = dungeons[10]
+            for(var i = 0; i < gt_chest_order.length; ++i){
+                var current_location = gt_chest_order[i]
+                var gt_locations = gt.raw_locations
+                for(var j = 0; j < gt_locations.length; ++j){
+                    var gt_location = gt_locations[j]
+                    if(current_location == gt_location){
+                        window.opened_chests[chest_location] = current_dungeon.good_items[j]
+                        window.available_chests.delete(chest_location)
+                        if("BigKeyA2" == gt.raw_items[j]){
+                            // beat ganon's tower and the game
+                            // count how many chests we opened
+                            document.getElementById('predictions').innerHTML = "You finished with " + Object.keys(window.opened_chests).length + " chests opened!"
+                            window.finished = true
+                            return
+                        } else {
+                            var item = getItem(gt.raw_items[j])
+                            if(item !== "trash"){
+                                toggle_item(item);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+                }
+            }
+        }
+        if(dungeon_defeated){
+            continue;
+        }
+        var location = window.location_scores[0][0]
+
+        for(var i = 0; i < chests.length; ++i){
+            current_chest = chests[i]
+            for(var j = 0; j < current_chest.raw_locations.length; ++j){
+                chest_location = current_chest.raw_locations[j]
+                if(chest_location === location){
+                    toggle_chest(i)
+                    break
+                }
+                else if(chest_location.includes("-") && chest_location.includes(location) && location !== 'Pyramid'){
+                    toggle_chest(i)
+                    break
+                }
+            }
+        }
+
+        for(var i = 0; i < dungeons.length; ++i){
+            current_dungeon = dungeons[i]
+            var label = "chest" + i
+            if(current_dungeon.is_beatable() === 'available' && !current_dungeon.is_beaten){
+                toggle_boss(i)
+                boss_label = "boss" + i
+                items[boss_label] = !items[boss_label]
+                var node = document.getElementsByClassName(boss_label)[0]
+                node.classList[items[boss_label] ? 'add' : 'remove']('defeated');
+                dungeon_defeated = true
+                document.getElementById(label).innerHTML = 0
+                if (crystalCheck() >= 7){
+            var gt_chest_order = ["Ganon's Tower - Hope Room - Left",
+                            "Ganon's Tower - Hope Room - Right",
+                            "Ganon's Tower - Bob's Torch",
+                            "Ganon's Tower - DMs Room - Top Left",
+                            "Ganon's Tower - DMs Room - Top Right",
+                            "Ganon's Tower - DMs Room - Bottom Left",
+                            "Ganon's Tower - DMs Room - Bottom Right",
+                            "Ganon's Tower - Map Chest",
+                            "Ganon's Tower - Firesnake Room",
+                            "Ganon's Tower - Randomizer Room - Top Left",
+                            "Ganon's Tower - Randomizer Room - Top Right",
+                            "Ganon's Tower - Randomizer Room - Bottom Left",
+                            "Ganon's Tower - Randomizer Room - Bottom Right",
+                            "Ganon's Tower - Bob's Chest",
+                            "Ganon's Tower - Big Key Room - Left",
+                            "Ganon's Tower - Big Key Room - Right",
+                            "Ganon's Tower - Big Key Chest",
+                            "Ganon's Tower - Compass Room - Top Left",
+                            "Ganon's Tower - Compass Room - Top Right",
+                            "Ganon's Tower - Compass Room - Bottom Left",
+                            "Ganon's Tower - Compass Room - Bottom Right",
+                            "Ganon's Tower - Tile Room"]
+            var gt = dungeons[10]
+            for(var i = 0; i < gt_chest_order.length; ++i){
+                var current_location = gt_chest_order[i]
+                var gt_locations = gt.raw_locations
+                for(var j = 0; j < gt_locations.length; ++j){
+                    var gt_location = gt_locations[j]
+                    if(current_location == gt_location){
+                        window.opened_chests[chest_location] = current_dungeon.good_items[j]
+                        window.available_chests.delete(chest_location)
+                        if("BigKeyA2" == gt.raw_items[j]){
+                            // beat ganon's tower and the game
+                            // count how many chests we opened
+                            document.getElementById('predictions').innerHTML = "You finished with " + Object.keys(window.opened_chests).length + " chests opened!"
+                            window.finished = true
+                            return
+                        } else {
+                            var item = getItem(gt.raw_items[j])
+                            if(item !== "trash"){
+                                toggle_item(item);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+            }
+            else if(['available', 'possible', 'darkavailable'].includes(current_dungeon.can_get_chest())){
+                for(var j = 0; j < current_dungeon.raw_locations.length; ++j){
+                    chest_location = current_dungeon.raw_locations[j]
+                    if (!(chest_location in window.opened_chests) && !chest_location.includes('Boss') && chest_location.includes(location)){
+                        window.opened_chests[chest_location] = current_dungeon.good_items[j]
+                        window.available_chests.delete(chest_location)
+                        document.getElementById(label).innerHTML = 0
+                        var item = getItem(current_dungeon.raw_items[j])
+                        if(item !== "trash"){
+                            toggle_item(item);
+                        }
+                    }
+
+                }
+            }
+        }
+        if(!window.finished){
+            updateAvailableChests();
+            callPredictionService();
+        }
+    }
+}
+
+function callPredictionService(){
+    // Do an AJAX query to our prediction service
+    var predict_body = {
+        'available': Array.from(window.available_chests),
+        'current_state': window.opened_chests
+    }
+    console.log(predict_body)
+    $.ajax({
+        url: 'http://127.0.0.1:5000/predict',
+        contentType: 'application/json',
+        method: 'POST',
+        type: 'POST',
+        dataType: 'json',
+        crossDomain: true,
+        data: JSON.stringify(predict_body),
+        success: function(result){
+            console.log(result)
+            // Create an array of list objects with location, score pair
+            var location_scores = Object.keys(result).map(function(key){
+                return [key, result[key]]
+            })
+
+            //sort it
+            location_scores.sort(function(a, b){
+                return b[1] - a[1]
+            })
+
+            // display the list
+            if(!window.finished == true){
+                window.location_scores = location_scores
+                document.getElementById('predictions').innerHTML = location_scores.slice(0, 3)
+            }
+        }
+    })
 }

@@ -624,8 +624,12 @@
 				<center>NOTE: If you change from Entrance to Non-Entrance (or vise-versa), you will lose all items and map locations tracked. If you switch from Inverted to Non-Inverted (or vise-versa), you will lose any map tracking locations<br><br>
 				<center><input type="button" onclick="closeFlagsModal();" value="Cancel" />&nbsp;&nbsp;&nbsp;<input type="button" onclick="adjustFlags();" value="Submit" /></center>
 			</div>
-		</div>	  
-	  
+		</div>
+	  	<div>
+			<center><input id="simulateButton" type="button" onclick="closeAndSimulate();" value="Simulate Seed" /></center>
+		</div>
+	  	<div class="predictions" id="predictions">
+		</div>
 	  <script>start()</script>
 
 	</body>

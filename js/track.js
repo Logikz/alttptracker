@@ -127,73 +127,25 @@
         }
 		
 		if (!skipkey) {
-			var node = document.getElementsByClassName(label)[0], is_boss = node.classList.contains('boss');
-			if ((typeof items[label]) === 'boolean') {
-				items[label] = !items[label];
-				
-				if (items[label] == true)
-					lastItem = label;
-				else
-					lastItem = null;
-				if (label != 'bomb') {
-					node.classList[items[label] ? 'add' : 'remove'](is_boss ? 'defeated' : 'active');
-				} else {
-					if (standardbombs) {
-						//Because you always have bombs...except in Standard
-						node.classList[items[label] ? 'add' : 'remove'](is_boss ? 'defeated' : 'active');
-					}
-				}
-			} else {
-				if (label === 'sword' && flags.swordmode === 'S') {
-				} else {
-					var value = items.inc(label);
-					node.className = node.className.replace(/ ?active-\w+/, '');
-					if (value) node.classList.add('active-' + value);
-					
-					if (value)
-						lastItem = label + " active-" + value;
-					else				
-						lastItem = null;					
-				}
-			}
-			// Initiate bunny graphics!
-			if (label === 'moonpearl' || label === 'tunic') {
-			   document.getElementsByClassName('tunic')[0].classList[!items.moonpearl ? 'add' : 'remove']('bunny');
-			}
+			toggle_item(label);
 		}
+		toggle_agahnim();
+
         if (flags.mapmode != 'N') {
-            for (var k = 0; k < chests.length; k++) {
-                if (!chests[k].is_opened)
-                    document.getElementById('locationMap'+k).className = 'location ' + chests[k].is_available();
-            }
-			if (flags.entrancemode != 'N') {					
-				for (var k = 0; k < entrances.length; k++) {
-					if (!entrances[k].is_opened) {
-						var entrancetype = '';
-						if (entrances[k].is_available()) {
-							if (entrances[k].known_location != '') {
-								entrancetype = isDungeon(entrances[k].known_location) ? 'dungeon' : 'keylocation';
-							} else if (entrances[k].is_connector) {
-								entrancetype = 'connector';
-							}
-						}
-						document.getElementById('entranceMap'+k).className = 'entrance ' + entrances[k].is_available() + entrancetype;
-					}
-				}
-			} else {
-				for (var k = 0; k < dungeons.length; k++) {
-					if (!dungeons[k].is_beaten)
-						document.getElementById('bossMap'+k).className = 'bossprize-' + prizes[k] + ' boss ' + dungeons[k].is_beatable();
-						if (items['chest'+k])
-							document.getElementById('dungeon'+k).className = 'dungeon ' + dungeons[k].can_get_chest();
-				}
-			}
-			
             // Clicking a boss on the tracker will check it off on the map!
+            var node = document.getElementsByClassName(label)[0], is_boss = node.classList.contains('boss');
             if (is_boss) {
                 toggle_boss(label.substring(4));
             }
-			toggle_agahnim();
+
+			updateAvailableChests()
+
+			 // For all chests here, if any are a good item, run location prediction
+            if(window.spoilerLoaded){
+                if(window.isGoodItem(getNiceName(label)) === 1){
+                    callPredictionService();
+                }
+            }
         }
 		
 		//Update the backgrounds of the chests in entrance
@@ -201,7 +153,75 @@
 			document.getElementById('chest'+k).style.backgroundColor = 'white';// (flags.entrancemode != 'N' ? getDungeonBackground(dungeons[k].can_get_chest()) : 'white');
 		}
     };
+    window.updateAvailableChests = function(){
+        for (var k = 0; k < chests.length; k++) {
+            if (!chests[k].is_opened)
+                document.getElementById('locationMap'+k).className = 'location ' + chests[k].is_available();
+            if (window.spoilerLoaded && chests[k].hasOwnProperty('raw_locations')){
+                for (var j = 0; j < chests[k].raw_locations.length; j++){
+                    if (chests[k].is_available() === 'available' && !chests[k].is_opened){
+                        window.available_chests.add(chests[k].raw_locations[j])
+                    }
+                    if (chests[k].is_opened){
+                        window.opened_chests[chests[k].raw_locations[j]] = chests[k].good_items[j]
+                    }
+                }
+            }
+        }
+        if (flags.entrancemode != 'N') {
+            for (var k = 0; k < entrances.length; k++) {
+                if (!entrances[k].is_opened) {
+                    var entrancetype = '';
+                    if (entrances[k].is_available()) {
+                        if (entrances[k].known_location != '') {
+                            entrancetype = isDungeon(entrances[k].known_location) ? 'dungeon' : 'keylocation';
+                        } else if (entrances[k].is_connector) {
+                            entrancetype = 'connector';
+                        }
+                    }
+                    document.getElementById('entranceMap'+k).className = 'entrance ' + entrances[k].is_available() + entrancetype;
+                }
+            }
+			} else {
+				for (var k = 0; k < dungeons.length; k++) {
+					if (!dungeons[k].is_beaten){
+                        document.getElementById('bossMap'+k).className = 'bossprize-' + prizes[k] + ' boss ' + dungeons[k].is_beatable();
+                        if(window.spoilerLoaded && dungeons[k].hasOwnProperty('raw_locations')){
+                            if (dungeons[k].is_beatable() == 'available'){
+                                for(var i = 0; i < dungeons[k].raw_locations.length; ++i){
+                                    if (!(dungeons[k].raw_locations[i] in window.opened_chests)){
+                                        window.available_chests.add(dungeons[k].raw_locations[i])
+                                    }
+                                }
+                            } else {
+                                if (dungeons[k].can_get_chest() == 'available'){
+                                    //todo figure out which chests are available, which happens in dungeons.js but needs
+                                    //modularization to retrieve the array of available chests
+                                    //in the mean time just add all the items except the boss to the list
+                                    for (var j = 0; j < dungeons[k].raw_locations.length; ++j){
+                                        var dungeon_location = dungeons[k].raw_locations[j]
+                                        if (!(dungeon_location in window.opened_chests) && !dungeon_location.includes('Boss')){
+                                            window.available_chests.add(dungeon_location)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+						if (items['chest'+k])
+							document.getElementById('dungeon'+k).className = 'dungeon ' + dungeons[k].can_get_chest();
+					}
 
+                    else {
+                        //dungeon has been beaten, so add them to opened chests
+                        if(window.spoilerLoaded && dungeons[k].hasOwnProperty('raw_locations')){
+                            for (var j = 0; j < dungeons[k].raw_locations.length; j++){
+                                window.opened_chests[dungeons[k].raw_locations[j]] = dungeons[k].good_items[j]
+                            }
+                        }
+                    }
+				}
+			}
+    }
 	window.getDungeonBackground = function(x) {
 		switch (x) {
 			case 'available':
@@ -812,6 +832,25 @@
             document.getElementById('locationMap'+x).className = 'location ' +
                 (chests[x].is_opened ? 'opened' : chests[x].is_available()) +
                 (highlight ? ' highlight' : '');
+            if(window.spoilerLoaded){
+                for(var i = 0; i < chests[x].raw_locations.length; ++i){
+                    if(chests[x].is_opened){
+                        window.opened_chests[chests[x].raw_locations[i]] = chests[x].good_items[i]
+                        window.available_chests.delete(chests[x].raw_locations[i])
+                    }
+                    else{
+                        delete window.opened_chests[chests[x].raw_locations[i]]
+                        window.available_chests.add(chests[x].raw_locations[i])
+                    }
+                    var item = getItem(chests[x].raw_items[i])
+                    if(item !== "trash"){
+                        toggle_item(item);
+                    }
+                }
+                updateAvailableChests();
+                callPredictionService();
+            }
+
         };
 		// Event of clicking on an entrance on the map
         window.toggle_location = function(x) {
@@ -890,11 +929,72 @@
 			if (document.getElementById('bossMap'+x) != null) {
 				document.getElementById('bossMap'+x).className = 'bossprize-' + prizes[x] + ' boss ' + (dungeons[x].is_beaten ? 'opened' : dungeons[x].is_beatable());
 			}
+			if(window.spoilerLoaded){
+                for(var i = 0; i < dungeons[x].raw_locations.length; ++i){
+                    var dungeon_location = dungeons[x].raw_locations[i]
+                    if(!(dungeon_location in window.opened_chests)){
+                        if(dungeons[x].is_beaten){
+                            window.opened_chests[dungeon_location] = dungeons[x].good_items[i]
+                            window.available_chests.delete(dungeon_location)
+                        }
+                        else{
+                            delete window.opened_chests[dungeon_location]
+                            window.available_chests.add(dungeon_location)
+                        }
+                        var item = getItem(dungeons[x].raw_items[i])
+                        if(item !== "trash"){
+                            toggle_item(item);
+                        }
+                    }
+                }
+                updateAvailableChests();
+                callPredictionService();
+            }
         };
         window.toggle_agahnim = function() {
 			if (flags.entrancemode === 'N') {
 				document.getElementById('castle').className = 'castle ' +
 					(items.agahnim ? 'opened' : agahnim.is_available());
+                if (agahnim.is_available() == 'available') {
+                    // Assume it's beaten if it's available for purposes of checking if items blocked by this
+                    // are accessible
+                    items.agahnim = true
+                }
+			}
+        };
+        window.toggle_item = function(label) {
+            var node = document.getElementsByClassName(label)[0], is_boss = node.classList.contains('boss');
+			if ((typeof items[label]) === 'boolean') {
+				items[label] = !items[label];
+
+				if (items[label] == true)
+					lastItem = label;
+				else
+					lastItem = null;
+				if (label != 'bomb') {
+					node.classList[items[label] ? 'add' : 'remove'](is_boss ? 'defeated' : 'active');
+				} else {
+					if (standardbombs) {
+						//Because you always have bombs...except in Standard
+						node.classList[items[label] ? 'add' : 'remove'](is_boss ? 'defeated' : 'active');
+					}
+				}
+			} else {
+				if (label === 'sword' && flags.swordmode === 'S') {
+				} else {
+					var value = items.inc(label);
+					node.className = node.className.replace(/ ?active-\w+/, '');
+					if (value) node.classList.add('active-' + value);
+
+					if (value)
+						lastItem = label + " active-" + value;
+					else
+						lastItem = null;
+				}
+			}
+			// Initiate bunny graphics!
+			if (label === 'moonpearl' || label === 'tunic') {
+			   document.getElementsByClassName('tunic')[0].classList[!items.moonpearl ? 'add' : 'remove']('bunny');
 			}
         };
         // Highlights a chest location and shows the caption

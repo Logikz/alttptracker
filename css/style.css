@@ -168,6 +168,16 @@ body {
   text-align: center;
 }
 
+#predictions {
+  width: 100%;
+  position: absolute;
+  bottom: 0px;
+  color: white;
+  background-color: black;
+  font-size: 36px;
+  text-align: center;
+}
+
 .icon {
   width: 16px !important;
   height: 16px !important;
